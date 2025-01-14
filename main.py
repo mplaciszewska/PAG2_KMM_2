@@ -364,6 +364,7 @@ def on_get_data():
     station_data = get_station_data_from_redis(selected_station, selected_parameter, INPUT_year, INPUT_month)
 
     if station_data:
+        data_label.configure(text="")
         pretty_data = json.dumps(station_data, indent=4)
         # minv = np.min([station_data[day][selected_value] for day in station_data])
         # maxv = np.max([station_data[day][selected_value] for day in station_data])
