@@ -52,15 +52,12 @@ def get_station_data_from_redis(selected_station, parameter, INPUT_year, INPUT_m
         return None
 
     if selected_station:
-        station_name = f"{selected_station['name1']} - {selected_station['additional']}"
         station_code = selected_station['ifcid']
- 
-    redis_key = f"{station_code}:{parameter}:{INPUT_year}_{INPUT_month}:01"
- 
-    if redis_db.exists(redis_key):
-        keys = redis_db.keys(f"{station_code}:{parameter}:{INPUT_year}_{INPUT_month}:*")
-        filename = f"{station_name}_{parameter}_{INPUT_year}_{INPUT_month}.json"
 
+    key_pattern = f"{station_code}:{parameter}:{INPUT_year}_{INPUT_month}:*"
+    redis_key = redis_db.keys(key_pattern)
+ 
+    if redis_key:
         if INPUT_month == 12:
             next_year = INPUT_year + 1
             next_month = 1
@@ -73,7 +70,10 @@ def get_station_data_from_redis(selected_station, parameter, INPUT_year, INPUT_m
         json_dict = {}
         for day in range(1, number_of_days.days + 1):
             key = f"{station_code}:{parameter}:{INPUT_year}_{INPUT_month}:{day:02d}"
-            data = redis_db.hgetall(key)
+            if redis_db.exists(key):
+                data = redis_db.hgetall(key)
+            else:
+                data = None
 
             json_dict[day] = data
 
@@ -288,22 +288,15 @@ powiat_dropdown.grid(row=5, column=1, padx=10, pady=10)
  
 # Dropdown menu for stacja
 def update_stacje(*args):
-    INPUT_year = int(year_var.get())
-    INPUT_month = int(month_var.get())
     selected_woj = woj_var.get()
     possible_stacje = station_collection.find({"wojewodztwo": selected_woj})
     
-    possible_ifcid = [stacja['ifcid'] for stacja in possible_stacje]
-
-    possible_stacje = [stacja for stacja in possible_stacje if stacja['ifcid'] in possible_ifcid]
-
     selected_powiat = powiat_var.get()
 
     if selected_powiat is not None and selected_powiat != "":
         possible_stacje = station_collection.find({"wojewodztwo": selected_woj, "powiat": selected_powiat})
 
     stacje_names = sorted([f"{stacja['name1']} - {stacja['additional']}" for stacja in possible_stacje])
-
     stacja_dropdown.configure(values=stacje_names)
 
     resize_to_fit()

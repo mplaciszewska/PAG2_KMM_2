@@ -129,11 +129,10 @@ def sava_all_data2mongo():
 
     woj_data = gpd.read_file(woj_path)
     wojewodztwa = woj_data.to_crs(epsg=2180)
+    # save_wojewodztwa(wojewodztwa, wojewodztwa_collection)
 
     powiaty_data = gpd.read_file(powiaty_path)
     powiaty = powiaty_data.to_crs(epsg=2180)
-
-    # save_wojewodztwa(wojewodztwa, wojewodztwa_collection)
     # save_powiaty(powiaty, powiaty_collection)
     
     save_stations(effacility_path, station_collection, powiaty, wojewodztwa)
