@@ -42,6 +42,8 @@ def resize_to_fit():
     window.geometry(f"{width}x{height}") 
 
 def get_station_data_from_redis(selected_station, parameter, INPUT_year, INPUT_month):
+    if selected_station == 'brak danych':
+        return None
     try:
         station_name_parts = selected_station.split(' - ')
         selected_station = station_collection.find_one({
@@ -247,7 +249,7 @@ window.geometry("1400x800")
 year_label = ctk.CTkLabel(window, text="Rok")
 year_label.grid(row=1, column=0, padx=10, pady=10)
 year_var = ctk.StringVar()
-year_dropdown = ctk.CTkOptionMenu(window, variable=year_var, values=[str(year) for year in range(2008, 2025)])
+year_dropdown = ctk.CTkOptionMenu(window, variable=year_var, values=[str(year) for year in range(2017, 2025)])
 year_dropdown.grid(row=1, column=1, padx=10, pady=10)
  
 # Dropdown menu for month
@@ -256,6 +258,7 @@ month_label.grid(row=2, column=0, padx=10, pady=10)
 month_var = ctk.StringVar()
 month_dropdown = ctk.CTkOptionMenu(window, variable=month_var, values=[str(month) for month in range(1, 13)])
 month_dropdown.grid(row=2, column=1, padx=10, pady=10)
+
  
 # Dropdown menu for wojewodztwo
 possible_wojewodztwa = wojewodztwa_collection.find()
@@ -289,24 +292,42 @@ powiat_dropdown.grid(row=5, column=1, padx=10, pady=10)
 # Dropdown menu for stacja
 def update_stacje(*args):
     selected_woj = woj_var.get()
-    possible_stacje = station_collection.find({"wojewodztwo": selected_woj})
-    
     selected_powiat = powiat_var.get()
-
-    if selected_powiat is not None and selected_powiat != "":
-        possible_stacje = station_collection.find({"wojewodztwo": selected_woj, "powiat": selected_powiat})
-
-    stacje_names = sorted([f"{stacja['name1']} - {stacja['additional']}" for stacja in possible_stacje])
-    stacja_dropdown.configure(values=stacje_names)
-
+    year = year_var.get()
+    month = month_var.get()
+    
+    stacje_names = [] 
+    
+    if selected_woj:
+        query = {"wojewodztwo": selected_woj}
+        if selected_powiat:
+            query["powiat"] = selected_powiat
+        
+        possible_stacje = list(station_collection.find(query))
+        for stacja in possible_stacje:
+            ifcid = stacja.get('ifcid')
+            if not ifcid:
+                continue
+            
+            # Check if Redis contains keys for the station
+            key_pattern = f"{ifcid}:*:{year}_{month}:*"
+            if redis_db.keys(key_pattern):
+                display_name = f"{stacja['name1']} - {stacja['additional']}"
+                stacje_names.append(display_name)
+    
+    stacja_var.set("")
+    stacja_dropdown.configure(values=stacje_names if stacje_names else ["brak danych"])
+    
     resize_to_fit()
- 
+
 powiat_var.trace("w", update_stacje)
- 
+month_var.trace("w", update_stacje)
+year_var.trace("w", update_stacje)
+
 stacja_label = ctk.CTkLabel(window, text="Stacja")
 stacja_label.grid(row=6, column=0, padx=10, pady=10)
 stacja_var = ctk.StringVar()
-stacja_dropdown = ctk.CTkOptionMenu(window, variable=stacja_var, values=[])
+stacja_dropdown = ctk.CTkOptionMenu(window, variable=stacja_var, values=[], width=400)
 stacja_dropdown.grid(row=6, column=1, padx=10, pady=10)
  
 # Save button
@@ -314,11 +335,11 @@ def on_save():
     try: 
         INPUT_wojewodztwo = woj_var.get()
         INPUT_powiat = powiat_var.get()
+        if not INPUT_wojewodztwo or not INPUT_powiat:
+            data_label.configure(text="Niepoprawne dane wejściowe.")
+            return
 
-        possible_stations = station_collection.find({'wojewodztwo': INPUT_wojewodztwo})
-
-        if INPUT_powiat is not None and INPUT_powiat != "":
-            possible_stations = station_collection.find({'wojewodztwo': INPUT_wojewodztwo, 'powiat': INPUT_powiat})
+        possible_stations = station_collection.find({'wojewodztwo': INPUT_wojewodztwo, 'powiat': INPUT_powiat})
 
         INPUT_stations = [station['ifcid'] for station in possible_stations]
 
@@ -329,12 +350,19 @@ def on_save():
         data_label.configure(text="Niepoprawne dane wejściowe.")
         return
 
+    existing_keys = []
     for station in INPUT_stations:
-        key = f"{station}:air_temperature:{INPUT_year}_{INPUT_month}"
+        key = f"{station}:*:{INPUT_year}_{INPUT_month}:*"
+        keys = redis_db.keys(key)
+        existing_keys.extend(keys)
 
+    if existing_keys:
+        data_label.configure(text="Dane dla wybranego powiatu i daty już istnieją.")
+        return
+    
     save_to_redis(redis_db, station_collection, INPUT_stations, INPUT_year, INPUT_month)
-
     data_label.configure(text="Dane zapisane do bazy Redis.")
+    update_stacje()
 
  
 save_button = ctk.CTkButton(window, text="Zapisz dane dla powiatu", command=on_save)
@@ -363,9 +391,7 @@ def on_get_data():
     try: 
         selected_station = stacja_var.get()
         selected_parameter = parameter_var.get()
-        sel_parameter = parameters_dict[selected_parameter]
         selected_value = value_var.get()
-        sel_value = values_dict[selected_value]
 
         INPUT_year = int(year_var.get())
         INPUT_month = int(month_var.get())
@@ -374,8 +400,17 @@ def on_get_data():
         return
     
     if not selected_parameter or selected_parameter == "" or not selected_value or selected_value == "":
-        data_label.configure(text="Nie wybrano parametru lub wartości.")
+        data_label.configure(text="Niepoprawne dane wejściowe.")
         return
+    if not selected_station or selected_station == "":
+        data_label.configure(text="Niepoprawne dane wejściowe.")
+        return
+    if not INPUT_year or not INPUT_month:
+        data_label.configure(text="Niepoprawne dane wejściowe.")
+        return
+    
+    sel_parameter = parameters_dict[selected_parameter]
+    sel_value = values_dict[selected_value]
  
     station_data = get_station_data_from_redis(selected_station, sel_parameter, INPUT_year, INPUT_month)
 
@@ -398,7 +433,9 @@ def on_get_data():
         data_label.configure(text="")
     else:
         for day in textObjectDict:
+            textObjectDict[day].config(state="normal")
             textObjectDict[day].delete("1.0", "end")
+            textObjectDict[day].config(state="disabled")
 
         data_label.configure(text="Nie znaleziono danych dla wybranej stacji.")
 
@@ -423,7 +460,8 @@ def update_calendar(*args):
     calendarFrame.destroy()
     calendarFrame = ctk.CTkFrame(window)
     calendarFrame.grid(row=0, column=2, rowspan=11, padx=10, pady=10)
-    
+
+    textObjectDict.clear() 
     printMonthYear(month, year)
     monthGenerator(dayMonthStarts(month, year), daysInMonth(month, year))
 

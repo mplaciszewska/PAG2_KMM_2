@@ -25,29 +25,29 @@ def request_meteo_data(INPUT_year, INPUT_month):
     requests.get(requests_path)
     if requests.get(requests_path).status_code == 200:
         data = requests.get(requests_path)
-        with open("dane_meteorologiczne/Meteo.zip", "wb") as file:
+        with open(f"dane_meteorologiczne/Meteo_{INPUT_year}_{INPUT_month}.zip", "wb") as file:
             file.write(data.content)
 
     # Unzip the file
-    with zipfile.ZipFile("dane_meteorologiczne/Meteo.zip", "r") as zip_ref:
-        zip_ref.extractall("dane_meteorologiczne/Meteo")
+    with zipfile.ZipFile(f"dane_meteorologiczne/Meteo_{INPUT_year}_{INPUT_month}.zip", "r") as zip_ref:
+        zip_ref.extractall(f"dane_meteorologiczne/Meteo_{INPUT_year}_{INPUT_month}")
 
 
 def read_csv_to_dataframes(INPUT_year, INPUT_month):
     variables_names = ["air_temp", "ground_temp", "wind_direction", "average_wind_speed", "max_wind_speed", "rainfall_10min", "rainfall_24h", "rainfall_1h", "humidity", "wind_gust", "snow_water_reserve"]
     
     # Meteo files paths
-    air_temp_path = "dane_meteorologiczne/Meteo/B00300S_" + str(INPUT_year) + "_" + str(INPUT_month).zfill(2) + ".csv"
-    ground_temp_path = "dane_meteorologiczne/Meteo/B00305A_" + str(INPUT_year) + "_" + str(INPUT_month).zfill(2) + ".csv"
-    wind_direction_path = "dane_meteorologiczne/Meteo/B00202A_" + str(INPUT_year) + "_" + str(INPUT_month).zfill(2) + ".csv"
-    average_wind_speed_path = "dane_meteorologiczne/Meteo/B00702A_" + str(INPUT_year) + "_" + str(INPUT_month).zfill(2) + ".csv"
-    max_wind_speed_path = "dane_meteorologiczne/Meteo/B00703A_" + str(INPUT_year) + "_" + str(INPUT_month).zfill(2) + ".csv"
-    rainfall_10min_path = "dane_meteorologiczne/Meteo/B00608S_" + str(INPUT_year) + "_" + str(INPUT_month).zfill(2) + ".csv"
-    rainfall_24h_path = "dane_meteorologiczne/Meteo/B00604S_" + str(INPUT_year) + "_" + str(INPUT_month).zfill(2) + ".csv"
-    rainfall_1h_path = "dane_meteorologiczne/Meteo/B00606S_" + str(INPUT_year) + "_" + str(INPUT_month).zfill(2) + ".csv"
-    humidity_path = "dane_meteorologiczne/Meteo/B00802A_" + str(INPUT_year) + "_" + str(INPUT_month).zfill(2) + ".csv"
-    wind_gust_path = "dane_meteorologiczne/Meteo/B00714A_" + str(INPUT_year) + "_" + str(INPUT_month).zfill(2) + ".csv"
-    snow_water_reserve_path = "dane_meteorologiczne/Meteo/B00910A_" + str(INPUT_year) + "_" + str(INPUT_month).zfill(2) + ".csv"
+    air_temp_path = f"dane_meteorologiczne/Meteo_{INPUT_year}_{INPUT_month}/B00300S_" + str(INPUT_year) + "_" + str(INPUT_month).zfill(2) + ".csv"
+    ground_temp_path = f"dane_meteorologiczne/Meteo_{INPUT_year}_{INPUT_month}/B00305A_" + str(INPUT_year) + "_" + str(INPUT_month).zfill(2) + ".csv"
+    wind_direction_path = f"dane_meteorologiczne/Meteo_{INPUT_year}_{INPUT_month}/B00202A_" + str(INPUT_year) + "_" + str(INPUT_month).zfill(2) + ".csv"
+    average_wind_speed_path = f"dane_meteorologiczne/Meteo_{INPUT_year}_{INPUT_month}/B00702A_" + str(INPUT_year) + "_" + str(INPUT_month).zfill(2) + ".csv"
+    max_wind_speed_path = f"dane_meteorologiczne/Meteo_{INPUT_year}_{INPUT_month}/B00703A_" + str(INPUT_year) + "_" + str(INPUT_month).zfill(2) + ".csv"
+    rainfall_10min_path = f"dane_meteorologiczne/Meteo_{INPUT_year}_{INPUT_month}/B00608S_" + str(INPUT_year) + "_" + str(INPUT_month).zfill(2) + ".csv"
+    rainfall_24h_path = f"dane_meteorologiczne/Meteo_{INPUT_year}_{INPUT_month}/B00604S_" + str(INPUT_year) + "_" + str(INPUT_month).zfill(2) + ".csv"
+    rainfall_1h_path = f"dane_meteorologiczne/Meteo_{INPUT_year}_{INPUT_month}/B00606S_" + str(INPUT_year) + "_" + str(INPUT_month).zfill(2) + ".csv"
+    humidity_path = f"dane_meteorologiczne/Meteo_{INPUT_year}_{INPUT_month}/B00802A_" + str(INPUT_year) + "_" + str(INPUT_month).zfill(2) + ".csv"
+    wind_gust_path = f"dane_meteorologiczne/Meteo_{INPUT_year}_{INPUT_month}/B00714A_" + str(INPUT_year) + "_" + str(INPUT_month).zfill(2) + ".csv"
+    snow_water_reserve_path = f"dane_meteorologiczne/Meteo_{INPUT_year}_{INPUT_month}/B00910A_" + str(INPUT_year) + "_" + str(INPUT_month).zfill(2) + ".csv"
 
     # check if file exists
     if not os.path.exists(air_temp_path) and not os.path.exists(ground_temp_path) and not os.path.exists(wind_direction_path) and not os.path.exists(average_wind_speed_path) and not os.path.exists(max_wind_speed_path) and not os.path.exists(rainfall_10min_path) and not os.path.exists(rainfall_24h_path) and not os.path.exists(rainfall_1h_path) and not os.path.exists(humidity_path) and not os.path.exists(wind_gust_path) and not os.path.exists(snow_water_reserve_path):
@@ -73,6 +73,7 @@ def read_csv_to_dataframes(INPUT_year, INPUT_month):
     air_temp, ground_temp, wind_direction, average_wind_speed, max_wind_speed, rainfall_10min, rainfall_24h, rainfall_1h, humidity, wind_gust, snow_water_reserve = dataframes.values()
 
     return dataframes
+
 def save_to_redis(redis_db, station_collection, INPUT_stations, INPUT_year, INPUT_month):
     variables_names = ["air_temp", "ground_temp", "wind_direction", "average_wind_speed", 
                        "max_wind_speed", "rainfall_10min", "rainfall_24h", "rainfall_1h", 
@@ -141,29 +142,37 @@ def save_to_redis(redis_db, station_collection, INPUT_stations, INPUT_year, INPU
                 night_data = night_data[(night_data["date"] < sunrise_rounded) | (night_data["date"] > sunset_rounded)]
 
                 mean_value_day = day_data["value"].mean()
+                mean_value_day = float(round(mean_value_day, 2))
+
                 median_value_day = day_data["value"].median()
+                median_value_day = float(round(median_value_day, 2))
                 trimmed_mean_value_day = stats.trim_mean(day_data["value"], 0.1)
+                trimmed_mean_value_day = float(round(trimmed_mean_value_day, 2))
 
                 mean_value_night = night_data["value"].mean()
+                mean_value_night = float(round(mean_value_night, 2))
                 median_value_night = night_data["value"].median()
+                median_value_night = float(round(median_value_night, 2))
                 trimmed_mean_value_night = stats.trim_mean(night_data["value"], 0.1)
-
+                trimmed_mean_value_night = float(round(trimmed_mean_value_night, 2))
+                
+                # save to a redis hash with a key of 'station:value:year_month'
                 day_key = f"{station}:{parameter}:{INPUT_year}_{INPUT_month}"
                 if day_key not in station_data:
                     station_data[day_key] = {}
 
                 station_data[day_key][day] = {
-                    "day_average": round(mean_value_day, 2) if not pd.isna(mean_value_day) else None,
-                    "night_average": round(mean_value_night, 2) if not pd.isna(mean_value_night) else None,
-                    "day_median": round(median_value_day, 2) if not pd.isna(median_value_day) else None,
-                    "night_median": round(median_value_night, 2) if not pd.isna(median_value_night) else None,
-                    "day_trimmed_mean": round(trimmed_mean_value_day, 2) if not pd.isna(trimmed_mean_value_day) else None,
-                    "night_trimmed_mean": round(trimmed_mean_value_night, 2) if not pd.isna(trimmed_mean_value_night) else None,
+                    "day_average": mean_value_day,
+                    "night_average": mean_value_night,
+                    "day_median": median_value_day,
+                    "night_median": median_value_night,
+                    "day_trimmed_mean": trimmed_mean_value_day,
+                    "night_trimmed_mean": trimmed_mean_value_night,
                 }
 
             for key, daily_data in station_data.items():
                 for day, metrics in daily_data.items():
                     redis_hash_key = f"{key}:{day:02d}"
-                    redis_db.delete(redis_hash_key)
+                    # redis_db.delete(redis_hash_key)
                     if not redis_db.exists(redis_hash_key):
                         redis_db.hset(redis_hash_key, mapping=metrics)
