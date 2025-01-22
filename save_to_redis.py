@@ -27,12 +27,10 @@ def request_meteo_data(INPUT_year, INPUT_month):
         data = requests.get(requests_path)
         with open("dane_meteorologiczne/Meteo.zip", "wb") as file:
             file.write(data.content)
-        print("File downloaded")
 
     # Unzip the file
     with zipfile.ZipFile("dane_meteorologiczne/Meteo.zip", "r") as zip_ref:
         zip_ref.extractall("dane_meteorologiczne/Meteo")
-        print("File unzipped")
 
 
 def read_csv_to_dataframes(INPUT_year, INPUT_month):

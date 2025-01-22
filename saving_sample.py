@@ -15,4 +15,7 @@ stations_mazowieckie = [station['ifcid'] for station in stations_mazowieckie]
 stations_warszawa = station_collection.find({"powiat": "Warszawa"})
 stations_warszawa = [station['ifcid'] for station in stations_warszawa]
 
-save_to_redis(redis_db, station_collection, stations_warszawa, 2024, 2)
+save_to_redis(redis_db, station_collection, stations_warszawa, 2024, 8)
+
+# for month in range(1, 13):
+#     save_to_redis(redis_db, station_collection, stations_warszawa, 2024, month)
