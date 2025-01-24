@@ -9,9 +9,6 @@ from astral.sun import sun
 from astral.location import Location
 from bs4 import BeautifulSoup
 from scipy import stats
-import redis
-import json
-import pymongo
 import tkinter as tkinter
 from tkinter import StringVar, OptionMenu, Label, filedialog
 from datetime import date
@@ -60,7 +57,19 @@ def read_csv_to_dataframes(INPUT_year, INPUT_month):
     for path in all_paths:
         # check if file exists
         try:
-            data = pd.read_csv(path, delimiter=";", header=None, names=["station_code", "parameter_code", "date", "value"])
+            data = pd.read_csv(
+                path, 
+                delimiter=";", 
+                header=None, 
+                names=["station_code", "parameter_code", "date", "value"], 
+                usecols=[0, 1, 2, 3], 
+                encoding="utf-8", 
+                low_memory=False,
+                skiprows=lambda x: x == 0 and "KodSH" in open(path).readline(),
+            )
+
+            data["value"] = data["value"].astype(str).str.replace(",", ".").astype(float)
+            
             dataframes[variables_names[all_paths.index(path)]] = data
 
             # change date to datetime format and set its as GMT timezone
@@ -98,7 +107,7 @@ def save_to_redis(redis_db, station_collection, INPUT_stations, INPUT_year, INPU
             print(f"Error parsing dates in parameter {parameter}: {e}")
             continue
 
-        dataframe = dataframe.dropna(subset=["date"])  # Drop rows with invalid dates
+        dataframe = dataframe.dropna(subset=["date"])
         
         for station in INPUT_stations:
             station_data = {}

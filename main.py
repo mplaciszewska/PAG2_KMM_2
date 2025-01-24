@@ -1,7 +1,6 @@
 import customtkinter as ctk 
 import datetime as dt
 from tkinter import filedialog
-import json
 
 from database_connect import *
 from save_to_redis import *
@@ -279,9 +278,8 @@ def update_powiaty(*args):
     powiat_dropdown.configure(values=powiaty_names)
     update_stacje()
 
-    resize_to_fit()
  
-woj_var.trace("w", update_powiaty)
+woj_var.trace_add("write", update_powiaty)
  
 powiat_label = ctk.CTkLabel(window, text="Powiat")
 powiat_label.grid(row=5, column=0, padx=10, pady=10)
@@ -317,12 +315,10 @@ def update_stacje(*args):
     
     stacja_var.set("")
     stacja_dropdown.configure(values=stacje_names if stacje_names else ["brak danych"])
-    
-    resize_to_fit()
 
-powiat_var.trace("w", update_stacje)
-month_var.trace("w", update_stacje)
-year_var.trace("w", update_stacje)
+powiat_var.trace_add("write", update_stacje)
+month_var.trace_add("write", update_stacje)
+year_var.trace_add("write", update_stacje)
 
 stacja_label = ctk.CTkLabel(window, text="Stacja")
 stacja_label.grid(row=6, column=0, padx=10, pady=10)
@@ -467,8 +463,8 @@ def update_calendar(*args):
 
     resize_to_fit()
 
-month_var.trace("w", update_calendar)
-year_var.trace("w", update_calendar)
+month_var.trace_add("write", update_calendar)
+year_var.trace_add("write", update_calendar)
 
 resize_to_fit()
 

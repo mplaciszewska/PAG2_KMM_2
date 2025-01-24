@@ -137,5 +137,11 @@ def sava_all_data2mongo():
     
     save_stations(effacility_path, station_collection, powiaty, wojewodztwa)
 
+    # create indexes
+    wojewodztwa_collection.create_index("name")
+    powiaty_collection.create_index("wojewodztwo")
+    station_collection.create_index("powiat")
+    station_collection.create_index("wojewodztwo")
+
 if __name__ == "__main__":
     sava_all_data2mongo()
